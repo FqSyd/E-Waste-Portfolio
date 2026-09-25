@@ -1,20 +1,17 @@
 // Central Assignments Data Repository
-// Add assignment objects below to automatically generate assignment cards.
 
 export const assignmentData = [
-  /*
-  Example template to add a new assignment:
   {
     id: 1,
     assignmentNumber: "01",
-    title: "Assignment 1: Title Here",
-    description: "Short description of assignment...",
-    category: "Reports", // Choose: 'Reports', 'Research', 'Activities', 'Presentations', 'Practicals'
-    date: "August 10, 2026",
+    title: "Global E-Waste Data Analysis & Interactive Cyber Dashboard",
+    description: "Empirical data analysis of global e-waste generation across 22 major countries (2022). Features World Bank population integration, zero missing values, per-capita intensity leaderboard, dynamic key findings, policy recommendations, and interactive 3D Globe map.",
+    category: "Reports",
+    date: "September 25, 2026",
     subject: "E-Waste & Environmental Management",
-    pdf: "./assignments/your-pdf-file.pdf",
-    image: "./assignments/your-cover-image.jpg",
-    tags: ["Tag1", "Tag2"]
+    pdf: "/assignments/Global_E_Waste_Analysis.ipynb",
+    dashboardUrl: "/dashboard.html",
+    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800",
+    tags: ["E-Waste", "Data Analysis", "Interactive Dashboard", "World Bank Data", "Cyber-Eco Theme"]
   }
-  */
 ];

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global E-Waste Generation Dashboard (2022 Preprocessed)</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Plotly.js & Chart.js -->
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0B0F19;
+            --card-bg: #131C2E;
+            --card-border: #1E293B;
+            --accent-green: #00FF9D;
+            --accent-emerald: #10B981;
+            --accent-cyan: #06B6D4;
+            --accent-red: #EF4444;
+            --accent-yellow: #F59E0B;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(19, 28, 46, 0.95), rgba(15, 23, 42, 0.95));
+            border: 1px solid var(--card-border);
+            border-left: 4px solid var(--accent-green);
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0, 255, 157, 0.1);
+        }
+
+        .header-title h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.3rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 span {
+            color: var(--accent-green);
+            text-shadow: 0 0 14px rgba(0, 255, 157, 0.5);
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* Cool Cyberpunk Buttons */
+        .cyber-btn {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid var(--accent-emerald);
+            color: var(--accent-green);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .cyber-btn:hover {
+            background: var(--accent-emerald);
+            color: #0B0F19;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.6), 0 4px 15px rgba(0,0,0,0.4);
+            transform: translateY(-2px);
+        }
+
+        .cyber-btn-cyan {
+            background: rgba(6, 182, 212, 0.12);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .cyber-btn-cyan:hover {
+            background: var(--accent-cyan);
+            color: #0B0F19;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+        }
+
+        .cyber-btn.active {
+            background: var(--accent-green);
+            color: #0B0F19;
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.4);
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 18px 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan));
+            opacity: 0.7;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 255, 157, 0.4);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 0 15px rgba(0, 255, 157, 0.15);
+        }
+
+        .kpi-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-label i {
+            color: var(--accent-emerald);
+        }
+
+        .kpi-value {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 8px 0 2px 0;
+        }
+
+        .kpi-sub {
+            font-size: 0.78rem;
+            color: var(--accent-green);
+        }
+
+        /* Controls Bar */
+        .controls-bar {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 16px 24px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            background: #0B0F19;
+            border: 1px solid var(--card-border);
+            padding: 10px 14px 10px 40px;
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-emerald);
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+        }
+
+        .map-toggle-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(30, 41, 59, 0.9);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .card-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--accent-green);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+
+        @media (max-width: 1024px) {
+            .col-8, .col-6, .col-4 { grid-column: span 12; }
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 360px;
+        }
+
+        #plotlyMap {
+            width: 100%;
+            height: 380px;
+        }
+
+        /* Table Styling */
+        .table-container {
+            overflow-x: auto;
+            max-height: 440px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        th {
+            background: #0B0F19;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+        }
+
+        tr:hover td {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 26px;
+            height: 26px;
+            line-height: 26px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.8rem;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .rank-1 { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; border: 1px solid var(--accent-red); }
+        .rank-2 { background: rgba(245, 158, 11, 0.2); color: #FDE047; border: 1px solid var(--accent-yellow); }
+        .rank-3 { background: rgba(6, 182, 212, 0.2); color: #67E8F9; border: 1px solid var(--accent-cyan); }
+        .rank-other { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border: 1px solid var(--card-border); }
+
+        .progress-bar-container {
+            width: 90px;
+            height: 6px;
+            background: #0B0F19;
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan));
+            border-radius: 3px;
+        }
+
+        /* Findings & Recommendations */
+        .finding-card {
+            background: #0B0F19;
+            border: 1px solid var(--card-border);
+            border-left: 3px solid var(--accent-green);
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+
+        .finding-card strong {
+            color: var(--accent-green);
+        }
+
+        .rec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .rec-item {
+            background: #0B0F19;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .rec-item:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+        }
+
+        .rec-item i {
+            font-size: 1.4rem;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+        }
+
+        .rec-item h4 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .rec-item p {
+            font-size: 0.83rem;
+            color: var(--text-muted);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--card-border);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header>
+        <div class="header-title">
+            <h1><i class="fa-solid fa-microchip"></i> GLOBAL <span>E-WASTE</span> CYBER DASHBOARD</h1>
+            <p>Empirical E-Waste Analysis Across 22 Major Nations (Preprocessed 2022 Dataset)</p>
+        </div>
+        <div class="header-actions">
+            <a href="https://e-waste-portfolio.vercel.app/" class="cyber-btn cyber-btn-cyan" target="_top">
+                <i class="fa-solid fa-arrow-left"></i> E-Portfolio Home
+            </a>
+            <div class="cyber-btn">
+                <i class="fa-solid fa-circle-check"></i> ZERO MISSING VALUES
+            </div>
+        </div>
+    </header>
+
+    <!-- Top KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Total E-Waste <i class="fa-solid fa-recycle"></i></div>
+            <div class="kpi-value" id="kpi-total">46.86 Mt</div>
+            <div class="kpi-sub">Dataset Aggregate</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Countries <i class="fa-solid fa-earth-americas"></i></div>
+            <div class="kpi-value" id="kpi-count">22</div>
+            <div class="kpi-sub">Fully Preprocessed</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Top Producer <i class="fa-solid fa-crown"></i></div>
+            <div class="kpi-value" id="kpi-top">China</div>
+            <div class="kpi-sub">11.09 Mt (23.68%)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Average / Country <i class="fa-solid fa-chart-line"></i></div>
+            <div class="kpi-value" id="kpi-avg">2.13 Mt</div>
+            <div class="kpi-sub">Median: 1.31 Mt</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Top 5 Share <i class="fa-solid fa-pie-chart"></i></div>
+            <div class="kpi-value" id="kpi-top5">57.96%</div>
+            <div class="kpi-sub">27.16 Mt Total</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Highest Per Capita <i class="fa-solid fa-user-bolt"></i></div>
+            <div class="kpi-value" id="kpi-percapita">France</div>
+            <div class="kpi-sub">24.19 kg / person</div>
+        </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search country by name..." oninput="filterData()">
+        </div>
+
+        <!-- Map Toggle Buttons -->
+        <div class="map-toggle-group">
+            <button class="cyber-btn active" id="proj-flat" onclick="setMapProjection('natural earth')">
+                <i class="fa-solid fa-map"></i> 2D Flat Map
+            </button>
+            <button class="cyber-btn" id="proj-globe" onclick="setMapProjection('orthographic')">
+                <i class="fa-solid fa-globe"></i> 3D Globe
+            </button>
+            <button class="cyber-btn cyber-btn-cyan" id="mode-toggle" onclick="toggleMapMode()">
+                <i class="fa-solid fa-layer-group"></i> Toggle Heatmap / Bubbles
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+        
+        <!-- Top 10 Producers Chart -->
+        <div class="card col-6">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-ranking-star"></i> Top 10 E-Waste Producers (Mt)</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="top10Chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Donut Chart: Top 5 Share Composition -->
+        <div class="card col-6">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-chart-pie"></i> Share Composition (% of Dataset Total)</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="donutChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Global Interactive Map (No API Key Required!) -->
+        <div class="card col-12">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-map-location-dot"></i> Global E-Waste Interactive Heatmap & Globe View</div>
+            </div>
+            <div id="plotlyMap"></div>
+        </div>
+
+        <!-- 4-Quadrant Matrix Bubble Plot -->
+        <div class="card col-6">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-braille"></i> E-Waste Matrix: Volume vs Per-Capita Intensity</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="matrixChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Per-Capita Intensity Chart -->
+        <div class="card col-6">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-weight-hanging"></i> E-Waste Per Capita Leaderboard (kg/person)</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="perCapitaChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Complete Ranking Data Table -->
+        <div class="card col-12">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-list-ol"></i> Complete Country Ranking Table (Zero N/A)</div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Country</th>
+                            <th>E-Waste Generated (Mt)</th>
+                            <th>SHARE OF DATASET TOTAL</th>
+                            <th>Population (M)</th>
+                            <th>E-Waste per Capita (kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingTableBody">
+                        <!-- Filled dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Dynamic Key Findings Panel -->
+        <div class="card col-6">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Dynamic Key Findings</div>
+            </div>
+            <div id="findingsContainer">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+
+        <!-- Strategic Policy Recommendations -->
+        <div class="card col-6">
+            <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-shield-halved"></i> Strategic Policy Recommendations</div>
+            </div>
+            <div class="rec-grid">
+                <div class="rec-item">
+                    <i class="fa-solid fa-industry"></i>
+                    <h4>Extended Producer Responsibility</h4>
+                    <p>Mandate hardware manufacturers to fund take-back schemes and safe e-waste recycling.</p>
+                </div>
+                <div class="rec-item">
+                    <i class="fa-solid fa-recycle"></i>
+                    <h4>Recycling Infrastructure</h4>
+                    <p>Modernize processing centers in emerging markets to formalize toxic informal recycling.</p>
+                </div>
+                <div class="rec-item">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    <h4>Right to Repair Laws</h4>
+                    <p>Enforce modular electronics design and long-term spare part availability for devices.</p>
+                </div>
+                <div class="rec-item">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <h4>Consumer Awareness</h4>
+                    <p>Create accessible community collection points and offer trade-in rebates for legacy tech.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        EWEM E-Waste Data Analysis 2022 &bull; Preprocessed Zero-N/A Dataset &bull; Deployed on Vercel E-Portfolio
+    </footer>
+
+    <script>
+        // Preprocessed Dataset (22 unique countries, Zero Missing Values)
+        const preprocessedData = [
+            { rank: 1, country: 'China', ewaste: 11.0944, pop: 1412.18, perCapita: 7.86, share: 23.68, iso: 'CHN' },
+            { rank: 2, country: 'United States', ewaste: 7.2680, pop: 333.29, perCapita: 21.81, share: 15.51, iso: 'USA' },
+            { rank: 3, country: 'India', ewaste: 3.9987, pop: 1417.17, perCapita: 2.82, share: 8.53, iso: 'IND' },
+            { rank: 4, country: 'Brazil', ewaste: 2.4202, pop: 215.31, perCapita: 11.24, share: 5.16, iso: 'BRA' },
+            { rank: 5, country: 'Japan', ewaste: 2.3781, pop: 125.12, perCapita: 19.01, share: 5.07, iso: 'JPN' },
+            { rank: 6, country: 'Russia', ewaste: 2.0385, pop: 144.00, perCapita: 14.16, share: 4.35, iso: 'RUS' },
+            { rank: 7, country: 'Indonesia', ewaste: 2.0276, pop: 275.52, perCapita: 7.36, share: 4.33, iso: 'IDN' },
+            { rank: 8, country: 'Germany', ewaste: 1.8537, pop: 84.00, perCapita: 22.07, share: 3.96, iso: 'DEU' },
+            { rank: 9, country: 'France', ewaste: 1.5723, pop: 65.00, perCapita: 24.19, share: 3.36, iso: 'FRA' },
+            { rank: 10, country: 'United Kingdom', ewaste: 1.4815, pop: 67.00, perCapita: 22.11, share: 3.16, iso: 'GBR' },
+            { rank: 11, country: 'Mexico', ewaste: 1.4642, pop: 127.50, perCapita: 11.48, share: 3.12, iso: 'MEX' },
+            { rank: 12, country: 'Vietnam', ewaste: 1.1627, pop: 98.19, perCapita: 11.84, share: 2.48, iso: 'VNM' },
+            { rank: 13, country: 'Nigeria', ewaste: 1.1445, pop: 218.54, perCapita: 5.24, share: 2.44, iso: 'NGA' },
+            { rank: 14, country: 'Turkey', ewaste: 1.0958, pop: 84.98, perCapita: 12.89, share: 2.34, iso: 'TUR' },
+            { rank: 15, country: 'Italy', ewaste: 1.0000, pop: 60.00, perCapita: 16.67, share: 2.13, iso: 'ITA' },
+            { rank: 16, country: 'Spain', ewaste: 0.9000, pop: 47.00, perCapita: 19.15, share: 1.92, iso: 'ESP' },
+            { rank: 17, country: 'Pakistan', ewaste: 0.8358, pop: 235.82, perCapita: 3.54, share: 1.78, iso: 'PAK' },
+            { rank: 18, country: 'Canada', ewaste: 0.7930, pop: 39.00, perCapita: 20.33, share: 1.69, iso: 'CAN' },
+            { rank: 19, country: 'Bangladesh', ewaste: 0.6996, pop: 169.83, perCapita: 4.12, share: 1.49, iso: 'BGD' },
+            { rank: 20, country: 'Egypt', ewaste: 0.6339, pop: 110.99, perCapita: 5.71, share: 1.35, iso: 'EGY' },
+            { rank: 21, country: 'Australia', ewaste: 0.5390, pop: 26.00, perCapita: 20.73, share: 1.15, iso: 'AUS' },
+            { rank: 22, country: 'South Africa', ewaste: 0.4594, pop: 60.00, perCapita: 7.66, share: 0.98, iso: 'ZAF' }
+        ];
+
+        let searchQuery = '';
+        let currentProjection = 'natural earth';
+        let isChoropleth = true;
+        let top10Chart, donutChart, matrixChart, perCapitaChart;
+
+        // Render Plotly Map
+        function renderPlotlyMap(data) {
+            let mapData = [];
+
+            if (isChoropleth) {
+                mapData = [{
+                    type: 'choropleth',
+                    locationmode: 'ISO-3',
+                    locations: data.map(d => d.iso),
+                    z: data.map(d => d.ewaste),
+                    text: data.map(d => `${d.country}<br>E-Waste: ${d.ewaste.toFixed(4)} Mt<br>Population: ${d.pop}M<br>Per Capita: ${d.perCapita} kg<br>Share: ${d.share}%`),
+                    colorscale: [
+                        [0, '#10B981'],
+                        [0.2, '#06B6D4'],
+                        [0.5, '#F59E0B'],
+                        [1, '#EF4444']
+                    ],
+                    colorbar: {
+                        title: 'E-Waste (Mt)',
+                        titlefont: { color: '#94A3B8', family: 'Outfit' },
+                        tickfont: { color: '#94A3B8', family: 'Outfit' }
+                    }
+                }];
+            } else {
+                mapData = [{
+                    type: 'scattergeo',
+                    locationmode: 'ISO-3',
+                    locations: data.map(d => d.iso),
+                    text: data.map(d => `${d.country}<br>E-Waste: ${d.ewaste.toFixed(4)} Mt<br>Per Capita: ${d.perCapita} kg`),
+                    marker: {
+                        size: data.map(d => Math.max(8, Math.sqrt(d.ewaste) * 12)),
+                        color: data.map(d => d.ewaste > 3 ? '#EF4444' : (d.ewaste > 1.5 ? '#F59E0B' : '#00FF9D')),
+                        line: { color: '#00FF9D', width: 1.5 },
+                        opacity: 0.85
+                    }
+                }];
+            }
+
+            const layout = {
+                geo: {
+                    projection: { type: currentProjection },
+                    bgcolor: '#131C2E',
+                    showframe: false,
+                    showcoastlines: true,
+                    coastlinecolor: '#1E293B',
+                    showland: true,
+                    landcolor: '#0B0F19',
+                    showcountries: true,
+                    countrycolor: '#1E293B'
+                },
+                paper_bgcolor: '#131C2E',
+                plot_bgcolor: '#131C2E',
+                margin: { l: 0, r: 0, t: 0, b: 0 }
+            };
+
+            Plotly.newPlot('plotlyMap', mapData, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function setMapProjection(proj) {
+            currentProjection = proj;
+            document.getElementById('proj-flat').classList.toggle('active', proj === 'natural earth');
+            document.getElementById('proj-globe').classList.toggle('active', proj === 'orthographic');
+            renderDashboard();
+        }
+
+        function toggleMapMode() {
+            isChoropleth = !isChoropleth;
+            renderDashboard();
+        }
+
+        // Initialize Chart.js Graphs
+        function initCharts() {
+            // Top 10 Horizontal Bar
+            const ctx1 = document.getElementById('top10Chart').getContext('2d');
+            top10Chart = new Chart(ctx1, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'E-Waste (Mt)', data: [], backgroundColor: [] }] },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#1E293B' }, ticks: { color: '#94A3B8' } },
+                        y: { grid: { display: false }, ticks: { color: '#F8FAFC', font: { family: 'Outfit', weight: '600' } } }
+                    }
+                }
+            });
+
+            // Donut Chart: Top 5 vs Rest Share
+            const ctx2 = document.getElementById('donutChart').getContext('2d');
+            donutChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['China', 'United States', 'India', 'Brazil', 'Japan', 'Remaining 17 Countries'],
+                    datasets: [{
+                        data: [23.68, 15.51, 8.53, 5.16, 5.07, 42.05],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#06B6D4', '#10B981', '#8B5CF6', '#334155'],
+                        borderWidth: 2,
+                        borderColor: '#131C2E'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#F8FAFC', font: { family: 'Outfit', size: 12 } } }
+                    }
+                }
+            });
+
+            // 4-Quadrant Scatter Matrix
+            const ctx3 = document.getElementById('matrixChart').getContext('2d');
+            matrixChart = new Chart(ctx3, {
+                type: 'scatter',
+                data: { datasets: [{ label: 'Countries', data: [], backgroundColor: '#00FF9D' }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `${ctx.raw.country}: ${ctx.raw.y} Mt Total (${ctx.raw.x} kg/person)`
+                            }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'E-Waste per Capita (kg/person)', color: '#94A3B8' }, grid: { color: '#1E293B' }, ticks: { color: '#94A3B8' } },
+                        y: { title: { display: true, text: 'Total E-Waste Generated (Mt)', color: '#94A3B8' }, grid: { color: '#1E293B' }, ticks: { color: '#94A3B8' } }
+                    }
+                }
+            });
+
+            // Per Capita Ranking Chart
+            const ctx4 = document.getElementById('perCapitaChart').getContext('2d');
+            perCapitaChart = new Chart(ctx4, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'kg / person', data: [], backgroundColor: '#06B6D4' }] },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#1E293B' }, ticks: { color: '#94A3B8' } },
+                        y: { grid: { display: false }, ticks: { color: '#F8FAFC', font: { family: 'Outfit', weight: '500', size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // Render Dashboard Data
+        function renderDashboard() {
+            let filtered = preprocessedData.filter(item => 
+                item.country.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            // 1. Update KPIs
+            const total = filtered.reduce((acc, curr) => acc + curr.ewaste, 0);
+            document.getElementById('kpi-total').innerText = total.toFixed(2) + ' Mt';
+            document.getElementById('kpi-count').innerText = filtered.length;
+
+            if (filtered.length > 0) {
+                document.getElementById('kpi-top').innerText = filtered[0].country;
+                document.getElementById('kpi-avg').innerText = (total / filtered.length).toFixed(2) + ' Mt';
+                
+                const top5Val = filtered.slice(0, 5).reduce((acc, curr) => acc + curr.ewaste, 0);
+                document.getElementById('kpi-top5').innerText = ((top5Val / total) * 100).toFixed(2) + '%';
+            }
+
+            const topPC = [...preprocessedData].sort((a,b) => b.perCapita - a.perCapita)[0];
+            document.getElementById('kpi-percapita').innerText = topPC.country;
+
+            // 2. Update Top 10 Chart
+            const top10 = filtered.slice(0, 10).reverse();
+            top10Chart.data.labels = top10.map(d => d.country);
+            top10Chart.data.datasets[0].data = top10.map(d => d.ewaste);
+            top10Chart.data.datasets[0].backgroundColor = top10.map(d => d.ewaste > 3 ? '#EF4444' : (d.ewaste > 1.5 ? '#F59E0B' : '#10B981'));
+            top10Chart.update();
+
+            // 3. Update Matrix Scatter
+            matrixChart.data.datasets[0].data = filtered.map(d => ({ x: d.perCapita, y: d.ewaste, country: d.country }));
+            matrixChart.update();
+
+            // 4. Update Per Capita Leaderboard Chart
+            const pcSorted = [...filtered].sort((a,b) => a.perCapita - b.perCapita);
+            perCapitaChart.data.labels = pcSorted.map(d => d.country);
+            perCapitaChart.data.datasets[0].data = pcSorted.map(d => d.perCapita);
+            perCapitaChart.update();
+
+            // 5. Update Complete Ranking Table (Zero N/A)
+            const tbody = document.getElementById('rankingTableBody');
+            tbody.innerHTML = '';
+            filtered.forEach(item => {
+                const rankClass = item.rank === 1 ? 'rank-1' : (item.rank === 2 ? 'rank-2' : (item.rank === 3 ? 'rank-3' : 'rank-other'));
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="rank-badge ${rankClass}">${item.rank}</span></td>
+                    <td><strong>${item.country}</strong></td>
+                    <td>${item.ewaste.toFixed(4)} Mt</td>
+                    <td>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${item.share * 3.5}%"></div>
+                        </div>
+                        <strong style="color:#00FF9D;">${item.share.toFixed(2)}%</strong>
+                    </td>
+                    <td>${item.pop.toFixed(2)} M</td>
+                    <td><strong>${item.perCapita.toFixed(2)} kg</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 6. Dynamic Key Findings
+            const findingsContainer = document.getElementById('findingsContainer');
+            if (filtered.length > 0) {
+                findingsContainer.innerHTML = `
+                    <div class="finding-card">
+                        🥇 <strong>Highest Volume Producer</strong>: <strong>${filtered[0].country}</strong> produces <strong>${filtered[0].ewaste.toFixed(4)} Mt</strong> (${filtered[0].share}% of dataset total).
+                    </div>
+                    <div class="finding-card">
+                        ⚡ <strong>Highest Per-Capita Intensity</strong>: <strong>France</strong> generates <strong>24.19 kg/person</strong>, followed by UK (22.11 kg) and Germany (22.07 kg).
+                    </div>
+                    <div class="finding-card">
+                        📊 <strong>Population Disconnect</strong>: India ranks 3rd in total volume (3.9987 Mt), but 22nd in per-capita e-waste (2.82 kg/person) due to its 1.417B population.
+                    </div>
+                    <div class="finding-card">
+                        📈 <strong>Top 5 Concentration</strong>: China, USA, India, Brazil, and Japan account for <strong>57.96%</strong> of all e-waste represented.
+                    </div>
+                `;
+            }
+
+            // 7. Render Plotly Map
+            renderPlotlyMap(filtered);
+        }
+
+        function filterData() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderDashboard();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            renderDashboard();
+        });
+    </script>
+</body>
+</html>

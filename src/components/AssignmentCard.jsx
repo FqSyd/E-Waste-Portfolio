@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Eye, Download, Calendar, Tag, FileCheck, ExternalLink } from 'lucide-react';
+import { Eye, Download, Calendar, Tag, FileCheck, ExternalLink, Sparkles } from 'lucide-react';
 
 export const AssignmentCard = ({ assignment, onPreview }) => {
   return (
@@ -17,7 +17,7 @@ export const AssignmentCard = ({ assignment, onPreview }) => {
         {/* Cover Image & Badge */}
         <div className="relative h-48 w-full overflow-hidden bg-eco-bg dark:bg-eco-darkBg">
           <img
-            src={assignment.image}
+            src={assignment.image || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800'}
             alt={assignment.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             loading="lazy"
@@ -76,25 +76,37 @@ export const AssignmentCard = ({ assignment, onPreview }) => {
       </div>
 
       {/* Buttons Bar */}
-      <div className="p-6 pt-0 grid grid-cols-2 gap-3 border-t border-eco-border/40 dark:border-eco-darkBorder/40 mt-4">
-        
-        <button
-          onClick={() => onPreview(assignment)}
-          className="flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-eco-primary/10 dark:bg-eco-accent/10 text-eco-primary dark:text-eco-accent font-bold text-xs hover:bg-eco-primary hover:text-white transition-all shadow-sm group/btn"
-        >
-          <Eye className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-          <span>Preview PDF</span>
-        </button>
+      <div className="p-6 pt-0 flex flex-col gap-2.5 border-t border-eco-border/40 dark:border-eco-darkBorder/40 mt-4">
+        {assignment.dashboardUrl && (
+          <a
+            href={assignment.dashboardUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-gradient-to-r from-eco-primary to-eco-accent text-white font-extrabold text-xs shadow-eco-glow hover:shadow-eco-md hover:scale-[1.02] transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Launch Cyber Dashboard 🚀</span>
+          </a>
+        )}
 
-        <a
-          href={assignment.pdf}
-          download
-          className="flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-white/80 dark:bg-eco-darkCard/80 border border-eco-border dark:border-eco-darkBorder text-eco-text dark:text-eco-darkText font-bold text-xs hover:border-eco-primary dark:hover:border-eco-accent hover:text-eco-primary transition-all shadow-sm"
-        >
-          <Download className="w-4 h-4 text-eco-accent" />
-          <span>Download</span>
-        </a>
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            onClick={() => onPreview(assignment)}
+            className="flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-eco-primary/10 dark:bg-eco-accent/10 text-eco-primary dark:text-eco-accent font-bold text-xs hover:bg-eco-primary hover:text-white transition-all shadow-sm group/btn"
+          >
+            <Eye className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+            <span>Preview</span>
+          </button>
 
+          <a
+            href={assignment.pdf || assignment.dashboardUrl}
+            download
+            className="flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-white/80 dark:bg-eco-darkCard/80 border border-eco-border dark:border-eco-darkBorder text-eco-text dark:text-eco-darkText font-bold text-xs hover:border-eco-primary dark:hover:border-eco-accent hover:text-eco-primary transition-all shadow-sm"
+          >
+            <Download className="w-4 h-4 text-eco-accent" />
+            <span>Download</span>
+          </a>
+        </div>
       </div>
     </motion.div>
   );
