@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, FileText, CheckCircle, Image as ImageIcon, Tag } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle, Image as ImageIcon, Copy, Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
@@ -18,14 +18,22 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
 
   const [pdfFileName, setPdfFileName] = useState('');
   const [imageFileName, setImageFileName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const handlePdfFile = (e) => {
     const file = e.target.files[0];
     if (file) {
       setPdfFileName(file.name);
+      setIsLoading(true);
       const reader = new FileReader();
       reader.onload = (event) => {
         setFormData(prev => ({ ...prev, pdfUrl: event.target.result }));
+        setIsLoading(false);
+      };
+      reader.onerror = () => {
+        alert("Failed to read PDF file. Please try again.");
+        setIsLoading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -45,42 +53,53 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.pdfUrl) {
-      alert("Please provide at least a title and a PDF file/URL.");
+    if (!formData.title.trim()) {
+      alert("Please provide an assignment title.");
       return;
     }
 
-    const newAssignment = {
-      id: Date.now(),
-      assignmentNumber: formData.assignmentNumber || `${Math.floor(Math.random() * 90 + 10)}`,
-      title: formData.title,
-      description: formData.description || "Uploaded coursework submission.",
-      category: formData.category,
-      date: formData.date,
-      subject: formData.subject,
-      pdf: formData.pdfUrl,
-      image: formData.imageUrl || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80",
-      tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : ["Uploaded", "Coursework"]
-    };
+    if (!formData.pdfUrl) {
+      alert("Please select a PDF document file.");
+      return;
+    }
 
-    onAddAssignment(newAssignment);
-    confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+    try {
+      const newAssignment = {
+        id: Date.now(),
+        assignmentNumber: formData.assignmentNumber.trim() || `${Math.floor(Math.random() * 90 + 10)}`,
+        title: formData.title.trim(),
+        description: formData.description.trim() || "Uploaded coursework submission.",
+        category: formData.category,
+        date: formData.date,
+        subject: formData.subject,
+        pdf: formData.pdfUrl,
+        image: formData.imageUrl || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80",
+        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : ["Uploaded", "Coursework"]
+      };
 
-    // Reset Form
-    setFormData({
-      assignmentNumber: '',
-      title: '',
-      description: '',
-      category: 'Reports',
-      date: new Date().toISOString().split('T')[0],
-      subject: 'E-Waste & Environmental Management',
-      pdfUrl: '',
-      imageUrl: '',
-      tags: ''
-    });
-    setPdfFileName('');
-    setImageFileName('');
-    onClose();
+      onAddAssignment(newAssignment);
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+
+      // Reset Form
+      setFormData({
+        assignmentNumber: '',
+        title: '',
+        description: '',
+        category: 'Reports',
+        date: new Date().toISOString().split('T')[0],
+        subject: 'E-Waste & Environmental Management',
+        pdfUrl: '',
+        imageUrl: '',
+        tags: ''
+      });
+      setPdfFileName('');
+      setImageFileName('');
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert("Could not publish assignment: " + err.message);
+    } finally {
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
@@ -102,6 +121,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="relative w-full max-w-2xl glass-modal rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-eco-primary/30 my-8 max-h-[90vh] overflow-y-auto"
         >
+          {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-eco-border dark:border-eco-darkBorder mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-eco-primary/10 text-eco-primary flex items-center justify-center">
@@ -112,7 +132,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                   Upload New Assignment
                 </h3>
                 <p className="text-xs text-eco-muted dark:text-eco-darkMuted">
-                  Upload PDF coursework to render directly on your portfolio.
+                  Upload coursework to render instantly on your portfolio cards and PDF modal.
                 </p>
               </div>
             </div>
@@ -136,7 +156,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                   placeholder="e.g. 01, PLEDGE"
                   value={formData.assignmentNumber}
                   onChange={(e) => setFormData({ ...formData, assignmentNumber: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText"
+                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText focus:outline-none focus:border-eco-primary"
                 />
               </div>
 
@@ -150,7 +170,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                   placeholder="e.g. Assignment 1: Global E-Waste Assessment"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText"
+                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText focus:outline-none focus:border-eco-primary"
                 />
               </div>
             </div>
@@ -163,7 +183,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText"
+                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText focus:outline-none focus:border-eco-primary"
                 >
                   <option value="Reports">Reports</option>
                   <option value="Research">Research</option>
@@ -181,7 +201,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText"
+                  className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText focus:outline-none focus:border-eco-primary"
                 />
               </div>
             </div>
@@ -195,7 +215,7 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                 placeholder="Brief summary of assignment contents, methodologies, and conclusions..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText"
+                className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText focus:outline-none focus:border-eco-primary"
               />
             </div>
 
@@ -210,9 +230,13 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                 type="file"
                 accept="application/pdf"
                 onChange={handlePdfFile}
-                className="block w-full text-xs text-eco-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-eco-primary file:text-white hover:file:bg-eco-secondary"
+                required={!formData.pdfUrl}
+                className="block w-full text-xs text-eco-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-eco-primary file:text-white hover:file:bg-eco-secondary cursor-pointer"
               />
-              {pdfFileName && (
+              {isLoading && (
+                <span className="block text-[11px] text-amber-500 font-medium">Reading PDF file, please wait...</span>
+              )}
+              {pdfFileName && !isLoading && (
                 <span className="block text-[11px] font-medium text-eco-accent">✓ Selected PDF: {pdfFileName}</span>
               )}
             </div>
@@ -221,14 +245,14 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
             <div className="p-4 rounded-2xl bg-white/60 dark:bg-eco-darkBg/60 border border-dashed border-eco-accent/40 space-y-2">
               <label className="block text-xs font-bold text-eco-text dark:text-eco-darkText flex items-center space-x-1.5">
                 <ImageIcon className="w-4 h-4 text-eco-accent" />
-                <span>Upload Card Cover Image (Optional)</span>
+                <span>Card Cover Image (Optional)</span>
               </label>
               
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageFile}
-                className="block w-full text-xs text-eco-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-white/80 file:text-eco-text hover:file:bg-eco-primary hover:file:text-white"
+                className="block w-full text-xs text-eco-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-white/80 file:text-eco-text hover:file:bg-eco-primary hover:file:text-white cursor-pointer"
               />
               {imageFileName && (
                 <span className="block text-[11px] font-medium text-eco-accent">✓ Selected Image: {imageFileName}</span>
@@ -244,26 +268,33 @@ export const UploadAssignmentModal = ({ isOpen, onClose, onAddAssignment }) => {
                 placeholder="e.g. E-Waste, Recycling, Report"
                 value={formData.tags}
                 onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText"
+                className="w-full px-4 py-2 rounded-xl bg-white/80 dark:bg-eco-darkBg/80 border border-eco-border dark:border-eco-darkBorder text-xs text-eco-text dark:text-eco-darkText focus:outline-none focus:border-eco-primary"
               />
             </div>
 
-            <div className="pt-4 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl border border-eco-border text-xs font-semibold text-eco-muted hover:text-eco-text"
-              >
-                Cancel
-              </button>
+            <div className="pt-4 flex items-center justify-between">
+              <span className="text-[11px] text-eco-muted dark:text-eco-darkMuted">
+                Instant preview & download enabled
+              </span>
 
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-eco-primary to-eco-secondary text-white text-xs font-bold shadow-eco-glow hover:shadow-eco-md transition-all flex items-center space-x-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                <span>Publish Assignment Card</span>
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl border border-eco-border text-xs font-semibold text-eco-muted hover:text-eco-text"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-eco-primary to-eco-secondary text-white text-xs font-bold shadow-eco-glow hover:shadow-eco-md transition-all flex items-center space-x-2 disabled:opacity-50"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{isLoading ? 'Processing...' : 'Publish Assignment Card'}</span>
+                </button>
+              </div>
             </div>
 
           </form>

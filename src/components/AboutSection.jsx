@@ -14,6 +14,7 @@ import { studentData } from '../data/studentData';
 import { assignmentData } from '../data/assignmentData';
 import { galleryData } from '../data/galleryData';
 import { achievementData } from '../data/achievementData';
+import { getStoredItems, STORE_ASSIGNMENTS, STORE_GALLERY } from '../utils/storage';
 
 const Counter = ({ value, duration = 1.5 }) => {
   const [count, setCount] = useState(0);
@@ -48,26 +49,30 @@ const Counter = ({ value, duration = 1.5 }) => {
 };
 
 export const AboutSection = () => {
-  const [assignmentCount, setAssignmentCount] = useState(0);
-  const [galleryCount, setGalleryCount] = useState(0);
-  const [certificateCount, setCertificateCount] = useState(0);
+  const [assignmentCount, setAssignmentCount] = useState(assignmentData.length);
+  const [galleryCount, setGalleryCount] = useState(galleryData.length);
+  const [certificateCount, setCertificateCount] = useState(achievementData.length);
 
-  const calculateCounts = () => {
-    // 1. Assignments
-    let customAss = [];
+  const calculateCounts = async () => {
+    // 1. Assignments count
     try {
-      const saved = localStorage.getItem('custom_assignments');
-      if (saved) customAss = JSON.parse(saved);
-    } catch (e) {}
-    setAssignmentCount(assignmentData.length + customAss.length);
+      const customAss = await getStoredItems(STORE_ASSIGNMENTS);
+      const existingAssIds = new Set(assignmentData.map(a => a.id));
+      const uniqueAss = customAss.filter(item => !existingAssIds.has(item.id));
+      setAssignmentCount(assignmentData.length + uniqueAss.length);
 
-    // 2. Gallery Photos
-    let customGal = [];
-    try {
-      const savedG = localStorage.getItem('custom_gallery');
-      if (savedG) customGal = JSON.parse(savedG);
-    } catch (e) {}
-    setGalleryCount(galleryData.length + customGal.length);
+      // 2. Gallery Photos count (count all photos across all albums)
+      const customGal = await getStoredItems(STORE_GALLERY);
+      const existingGalIds = new Set(galleryData.map(g => g.id));
+      const uniqueGal = customGal.filter(item => !existingGalIds.has(item.id));
+      const allAlbums = [...galleryData, ...uniqueGal];
+      const totalPhotos = allAlbums.reduce((acc, curr) => acc + (curr.images?.length || 1), 0);
+      setGalleryCount(totalPhotos);
+    } catch (e) {
+      setAssignmentCount(assignmentData.length);
+      const totalPhotos = galleryData.reduce((acc, curr) => acc + (curr.images?.length || 1), 0);
+      setGalleryCount(totalPhotos);
+    }
 
     // 3. Certificates
     setCertificateCount(achievementData.length);
